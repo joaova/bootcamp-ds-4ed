@@ -17,7 +17,17 @@ services: {}
 downloads: {}
 packages:
 - numpy
-channels: []
+- pip:
+  - curl_cffi
+- scikit-learn
+- matplotlib
+- pandas
+- notebook
+- seaborn
+- yfinance
+channels:
+- conda-forge
+- gurobi
 platforms:
 - linux-64
 - osx-64
