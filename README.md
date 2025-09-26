@@ -26,14 +26,20 @@ Os participantes devem buscar os dados históricos dos últimos 7 anos dos índi
 O modelo de otimização a ser utilizado é o seguinte: 
 
 **Minimizar:**
-$$ \frac{1}{T}\sum_{t=1}^{T}(\sum_{i \in I}w_{i}r_{t,i}-R_{t})^{2} $$
+$$
+\min \frac{1}{T}\sum_{t=1}^{T}\left(\sum_{i \in I}w_{i}r_{t,i}-R_{t}\right)^{2}
+$$
 
 **Sujeito a:**
-$$ \sum_{i \in I}w_{i}=1 $$
-$$ w_{i} \ge 0 \quad \forall i \in I $$
-$$ w_{i} \le z_{i} \quad \forall i \in I $$
-$$ \sum_{i \in I}z_{i} \le K $$
-$$ z_{i} \in \{0,1\} \quad \forall i \in I $$
+$$
+\begin{aligned}
+& \sum_{i \in I}w_{i}=1 \\
+& w_{i} \ge 0, \quad \forall i \in I \\
+& w_{i} \le z_{i}, \quad \forall i \in I \\
+& \sum_{i \in I}z_{i} \le K \\
+& z_{i} \in \{0,1\}, \quad \forall i \in I
+\end{aligned}
+$$
 
 **Onde:**
 * **I**: conjunto de ativos disponíveis 
