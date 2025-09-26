@@ -21,35 +21,6 @@ Os índices de mercado (por exemplo, S&P500) são compostos por ações individu
 
 Os participantes devem buscar os dados históricos dos últimos 7 anos dos índices S&P 100 e IBOVESPA para serem utilizados como inputs. [cite: 8] [cite_start]Os dados podem ser encontrados no Yahoo Finance e outros locais de interesse do grupo.
 
-### Modelo Matemático
-
-O modelo de otimização a ser utilizado é o seguinte: 
-
-**Minimizar:**
-$$
-\min \frac{1}{T}\sum_{t=1}^{T}\left(\sum_{i \in I}w_{i}r_{t,i}-R_{t}\right)^{2}
-$$
-
-**Sujeito a:**
-$$
-\begin{aligned}
-& \sum_{i \in I}w_{i}=1 \\
-& w_{i} \ge 0, \quad \forall i \in I \\
-& w_{i} \le z_{i}, \quad \forall i \in I \\
-& \sum_{i \in I}z_{i} \le K \\
-& z_{i} \in \{0,1\}, \quad \forall i \in I
-\end{aligned}
-$$
-
-**Onde:**
-* **I**: conjunto de ativos disponíveis 
-* **T**: número de períodos 
-* **$w_{i}$**: Peso do ativo *i* no portfólio de tracking
-* **$z_{i}$**: Variável binária (0,1) para o ativo *i*
-* **$R_{t}$**: Rendimento do índice no período *t* 
-* **$r_{t,i}$**: Rendimento do ativo *i* no período *t* 
-* **K**: Número máximo de ativos permitidos
-
 ### Index tracking (IT)
 
 * IT consiste em uma estratégia de replicar um índice de mercado utilizando um número menor de ações. 
@@ -72,6 +43,6 @@ A implementação do modelo de otimização deve ser realizada em Python, podend
 
 ### Referências Bibliográficas para o index-tracking:
 
-* CORNUEJOLS, Gerard; TÜTÜNCÜ, Reha. **Optimization methods in finance**. [cite_start]Cambridge University Press, 2006. [cite: 48]
-* SANTANNA, L.; FILOMENA, T. P.; BORENSTEIN, D. **Index Tracking com Controle do Número de Ativos**. Revista Brasileira de Finanças, v. 12, p. [cite_start]89-119, 2014. [cite: 49, 50]
-* SANTANNA, L.; FILOMENA, T. P.; BORENSTEIN, D. GUEDES, P. **Index tracking with controlled number of assets using a hybrid heuristic combining genetic algorithm and non-linear programming**. Annals of Operations Research, v. 258, p. [cite_start]449-867, 2017. [cite: 51, 52, 53, 54, 55]
+* CORNUEJOLS, Gerard; TÜTÜNCÜ, Reha. **Optimization methods in finance**. Cambridge University Press, 2006.
+* SANTANNA, L.; FILOMENA, T. P.; BORENSTEIN, D. **Index Tracking com Controle do Número de Ativos**. Revista Brasileira de Finanças, v. 12, p.89-119, 2014. 
+* SANTANNA, L.; FILOMENA, T. P.; BORENSTEIN, D. GUEDES, P. **Index tracking with controlled number of assets using a hybrid heuristic combining genetic algorithm and non-linear programming**. Annals of Operations Research, v. 258, p. 449-867, 2017. 
