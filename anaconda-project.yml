@@ -17,14 +17,14 @@ services: {}
 downloads: {}
 packages:
 - numpy
-- pip:
-  - curl_cffi
 - scikit-learn
 - matplotlib
 - pandas
 - notebook
 - seaborn
-- yfinance
+- pip:
+  - curl_cffi
+  - yfinance
 channels:
 - conda-forge
 - gurobi
