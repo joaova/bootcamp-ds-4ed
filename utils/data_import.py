@@ -50,11 +50,7 @@ def get_sp100(FIRST_DATE, LAST_DATE):
 
     data = data.reset_index()
 
-    df = data.melt(id_vars=['Date'], var_name='Ticker', value_name='Price')
-
-    df.set_index('Date', inplace = True)
-
-    df.rename(columns={'Price':'Adj Close','Ticker': 'ticker'}, inplace = True)
+    data.set_index('Date', inplace = True)
                
-    return df
+    return data
 
