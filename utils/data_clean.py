@@ -1,7 +1,8 @@
 def clean_data(df_prices, 
                thresh_valid_data = 0.95,
                size_train = 0.75):
-    """Clean stock price data, removing tickers with low ammount of observations
+    """
+    Clean stock price data, removing tickers with low ammount of observations
     
     PARAMETERS
     ----------

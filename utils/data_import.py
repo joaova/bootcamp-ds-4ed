@@ -12,7 +12,10 @@ def get_sp100(FIRST_DATE, LAST_DATE):
     
     Parameters
     ----------
-        None
+        FIRST_DATE : str or datetime
+            Start date for price data (e.g. "2020-01-01")
+        LAST_DATE : str or datetime
+            End date for price data (e.g. "2024-12-31")
         
     Returns
     -------
@@ -22,7 +25,7 @@ def get_sp100(FIRST_DATE, LAST_DATE):
 
     Examples
     --------
-    >>> print(get_sp100_constitution())
+    >>> df = get_sp100("2020-01-01", "2024-12-31")
     """
 
     
