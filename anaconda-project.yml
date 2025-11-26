@@ -16,6 +16,7 @@ variables: {}
 services: {}
 downloads: {}
 packages:
+- python=3.13
 - numpy
 - scikit-learn
 - matplotlib
