@@ -1,10 +1,9 @@
+import gurobipy as gp
 import pandas as pd
 import numpy as np
-import gurobipy as gp
-
 from random import seed
 
-def find_weights(df_test):
+def find_quarters(df_test):
 
     seed(20220209) # reproducibility
 
@@ -24,88 +23,76 @@ def find_weights(df_test):
 
     return quarters_data
 
-def index_tracking(quarters_data, mkt_index,max_assets, current_train, df_test, time):
+import gurobipy as gp
+import pandas as pd
+import numpy as np
 
-    i = 1
-    portfolio_history = {}  # para armazenar pesos
-    returns_history = {}    # para armazenar retornos trimestrais do portfólio
+def index_tracking(quarters_data, mkt_index, max_assets, current_train, df_test, time_limit):
+    portfolio_history = {} 
+    returns_history = {} 
+    
+    # Cópia do treino para não afetar execuções futuras
+    train_data = current_train.copy()
 
-    # para cada trimestre
     for q_name, df_quarter in quarters_data.items():
-        # Adiciona trimestre ao conjunto de treino
-        current_train = pd.concat([current_train, df_quarter])
+        # 1. Atualiza janela de treino
+        train_data = pd.concat([train_data, df_quarter])
 
         # Separa dados
-        r_mkt = current_train[mkt_index]
-        r_it = current_train.drop(mkt_index, axis=1)
+        r_mkt = train_data[mkt_index]
+        r_it = train_data.drop(mkt_index, axis=1)
         tickers = list(r_it.columns)
             
-        # Create an empty model
-        m = gp.Model('gurobi_index_tracking')
+        # Modelo Gurobi
+        m = gp.Model('index_tracking')
+        
+        # Variáveis
+        w = pd.Series(m.addVars(tickers, lb=0, ub=1, vtype=gp.GRB.CONTINUOUS), index=tickers)
+        z = pd.Series(m.addVars(tickers, vtype=gp.GRB.BINARY), index=tickers)
 
-        # PARAMETERS 
-        # w_i: the i_th stock gets a weight w_i 
-        w = pd.Series(m.addVars(tickers, 
-                                lb = 0,
-                                ub = 1,
-                                vtype = gp.GRB.CONTINUOUS), 
-                    index=tickers)
-        # z_i: the i_th stock gets a binary z_i
-        z = pd.Series(m.addVars(tickers,
-                                vtype = gp.GRB.BINARY),
-                        index=tickers)
+        # Restrições
+        m.addConstr(w.sum() == 1, 'budget')
+        m.addConstr(z.sum() <= max_assets, 'cardinality')
+        
+        for t in tickers:
+            m.addConstr(w[t] <= z[t]) 
+            m.addConstr(w[t] >= 0.01 * z[t]) # Peso mínimo de 1% se ativo
 
-        # CONSTRAINTS
-        # sum(w_i) = 1: portfolio budget constrain
-        m.addConstr(w.sum() == 1, 'port_budget')
-        # w_i <= z_i: w_i can only have a value > 0 if z_i > 0 (or z_i = 1 in this case)
-        for i_ticker in tickers:
-            m.addConstr(w[i_ticker] <= z[i_ticker], 
-                        f'dummy_restriction_{i_ticker}')  
-        # sum(z_i) <= max_assets: number of assets constraint
-        m.addConstr(z.sum() <= max_assets, 'max_assets_restriction')
-        
-        m.update()
-        
-        my_error = r_it.dot(w) - r_mkt
-        
-        # set objective function, minimize the sum of squared tracking errors between portfolio and market returns
-        m.setObjective(
-            gp.quicksum(my_error.pow(2)), 
-            gp.GRB.MINIMIZE)     
+        # Função Objetivo
+        diff = r_it.dot(w) - r_mkt
+        m.setObjective(gp.quicksum(diff * diff), gp.GRB.MINIMIZE)    
 
-        print(f"Starting the optimization process for the {i} trimester ")
-        print(f"It will take {time} seconds to it's conclusion")
-        
-        # Optimize model
         m.setParam('OutputFlag', 0)
-        m.setParam('TimeLimit', time) # in secs
-        #m.setParam('MIPGap', 0.05) # in secs
+        m.setParam('TimeLimit', time_limit)
         m.optimize()
         
-        # --- Resultados ---
-        weights = {t: w[t].X for t in tickers if w[t].X > 0.001}
-        portfolio_history[q_name] = weights  # guarda o portfólio
+        # --- Salvar Resultados ---
+        if m.SolCount > 0:
+            current_weights = {t: w[t].X for t in tickers if w[t].X > 1e-4}
+        else:
+            print(f"⚠️ Sem solução ótima para {q_name}")
+            current_weights = {t: 1.0/len(tickers) for t in tickers}
 
-        print(f"✅ {len(weights)} ações selecionadas:")
-        for t, val in sorted(weights.items(), key=lambda x: -x[1]):
-            print(f"   {t}: {val*100:.2f}%")
+        portfolio_history[q_name] = current_weights
+        
+        # Calcula retorno do trimestre
+        r_it_quarter = df_quarter.drop(mkt_index, axis=1)
+        asset_names = list(current_weights.keys())
+        asset_values = np.array(list(current_weights.values()))
+        
+        daily_ret = r_it_quarter[asset_names].dot(asset_values)
+        returns_history[q_name] = daily_ret
+        
+        print(f"Trimestre {q_name}: {len(current_weights)} ativos.")
 
-        i = i + 1
-
-        # --- Avaliar o desempenho no trimestre ---
-        if q_name in quarters_data:
-            r_mkt_test = df_quarter[mkt_index]
-            r_it_test = df_quarter.drop(mkt_index, axis=1)
-
-            # calcula o retorno diário do portfólio
-            port_ret = r_it_test[list(weights.keys())].dot(np.array(list(weights.values())))
-            # aramenaz
-            returns_history[q_name] = port_ret
-
-    # --- Pós-processamento: retorno acumulado ---
-    portfolio_cumret = pd.concat(returns_history).groupby(level=1).sum().cumsum()
-    market_cumret = df_test[mkt_index].cumsum()
-    print("Fim do processo de otimização")
-
-    return portfolio_cumret,market_cumret
+    # --- CORREÇÃO DO ERRO AQUI ---
+    # Concatena criando MultiIndex (Q1, Data)
+    full_portfolio_returns = pd.concat(returns_history)
+    
+    # Remove o primeiro nível (Q1, Q2...) para ficar apenas com a Data
+    full_portfolio_returns = full_portfolio_returns.droplevel(0)
+    
+    # Agora o índice é compatível com df_test
+    market_returns = df_test.loc[full_portfolio_returns.index, mkt_index]
+    
+    return full_portfolio_returns, market_returns
