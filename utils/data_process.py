@@ -27,6 +27,10 @@ import gurobipy as gp
 import pandas as pd
 import numpy as np
 
+import pandas as pd
+import numpy as np
+import gurobipy as gp
+
 def index_tracking(quarters_data, mkt_index, max_assets, current_train, df_test, time_limit):
     portfolio_history = {} 
     returns_history = {} 
@@ -68,7 +72,21 @@ def index_tracking(quarters_data, mkt_index, max_assets, current_train, df_test,
         
         # --- Salvar Resultados ---
         if m.SolCount > 0:
+            # Filtra apenas pesos relevantes (> 0.0001)
             current_weights = {t: w[t].X for t in tickers if w[t].X > 1e-4}
+            
+            # --- [NOVO] IMPRESSÃO DOS ATIVOS E PESOS ---
+            print(f"\n>>> Carteira Otimizada: {q_name}")
+            print(f"Total de ativos selecionados: {len(current_weights)}")
+            
+            # Ordena do maior peso para o menor para facilitar leitura
+            sorted_weights = sorted(current_weights.items(), key=lambda item: item[1], reverse=True)
+            
+            for asset, weight in sorted_weights:
+                print(f"  {asset:<10} : {weight:.4%}") # Ex: PETR4 : 15.2000%
+            print("-" * 30)
+            # -------------------------------------------
+
         else:
             print(f"⚠️ Sem solução ótima para {q_name}")
             current_weights = {t: 1.0/len(tickers) for t in tickers}
@@ -80,19 +98,20 @@ def index_tracking(quarters_data, mkt_index, max_assets, current_train, df_test,
         asset_names = list(current_weights.keys())
         asset_values = np.array(list(current_weights.values()))
         
-        daily_ret = r_it_quarter[asset_names].dot(asset_values)
+        # Garante que só tentamos multiplicar se houver ativos (caso edge case de solver falhar)
+        if asset_names:
+            daily_ret = r_it_quarter[asset_names].dot(asset_values)
+        else:
+            daily_ret = pd.Series(0, index=df_quarter.index)
+
         returns_history[q_name] = daily_ret
         
-        print(f"Trimestre {q_name}: {len(current_weights)} ativos.")
 
-    # --- CORREÇÃO DO ERRO AQUI ---
-    # Concatena criando MultiIndex (Q1, Data)
+    # Concatena criando MultiIndex e depois ajusta
     full_portfolio_returns = pd.concat(returns_history)
-    
-    # Remove o primeiro nível (Q1, Q2...) para ficar apenas com a Data
     full_portfolio_returns = full_portfolio_returns.droplevel(0)
     
-    # Agora o índice é compatível com df_test
+    # Alinhamento com df_test para retornar o benchmark correto no período
     market_returns = df_test.loc[full_portfolio_returns.index, mkt_index]
     
     return full_portfolio_returns, market_returns
